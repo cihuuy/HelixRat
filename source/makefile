@@ -5,7 +5,7 @@
 CC = g++
 
 # compiler flags
-CFLAGS = -Iinclude   -Wall   -std=c++11 -O3
+CFLAGS = -Iinclude   -Wall   -std=c++11 -O3 -g
 
 # linker flags
 LFLAGS = 
@@ -29,7 +29,7 @@ EXE = bin/helixrat
 $(EXE): $(ALL_OBJ)
 	mkdir -p bin obj
 	$(CC) $(CFLAGS) $(ALL_OBJ) -o $(EXE) $(LFLAGS)
-	strip --strip-all $(EXE)
+# strip --strip-all $(EXE)
 
 # build object files
 

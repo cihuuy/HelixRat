@@ -39,21 +39,37 @@ namespace helixrat::DBStore
         uint32_t key_offset;
         uint32_t value_offset;
     };
+    
+    uint32_t rotateRight(uint32_t x, int n)
+    {
+        uint32_t shifted = x >> n;
+
+        uint32_t rot_bits = x << (32 - n);
+
+        uint32_t combined = shifted | rot_bits;
+
+        return combined;
+    }
 
     uint32_t make_checksum(uint8_t *data, uint32_t length)
     {
-        uint32_t checksum = 0;
+        uint32_t checksum = 0x30e1997e;
         for (uint32_t i = 0; i < length; i++)
         {
-            checksum += data[i];
+            checksum ^= (uint32_t)data[i] << (i % 32);
+        }
+
+        for (uint32_t i = 0; i < length; i++)
+        {
+            checksum ^= (uint32_t)data[i] >> (rotateRight((uint32_t)data[i], i) % 32);
         }
         return checksum;
     }
-
+    // Mask as a Sqlite3 database
     db_store_header_t init_header()
     {
         db_store_header_t header;
-        uint8_t magic_bytes[] = {0x53,0x51,0x4c,0x69,0x74,0x65,0x20,0x66,0x6f,0x72,0x6d,0x61,0x74,0x20,0x33,0x00};
+        uint8_t magic_bytes[] = {0x53, 0x51, 0x4c, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x20, 0x33, 0x00};
 
         memcpy(header.magic_mask, magic_bytes, 16);
         memcpy(header.magic, "DBS1", 4);

@@ -1,6 +1,6 @@
 #include <common/crypto.h>
 #include <common/chacha20.h>
-#include <common/sha256.h>
+#include <common/helixrat_hash.h>
 #include <string.h>
 
 namespace helixrat::Crypto
@@ -46,13 +46,7 @@ namespace helixrat::Crypto
 
     void hash(std::string message, hash_t &hash)
     {
-        SHA256_CTX ctx;
-        sha256_init(&ctx);
-        uint8_t digest[32];
-        sha256_update(&ctx, (uint8_t *)message.c_str(), message.length());
-        sha256_final(&ctx, digest);
-        hash.hash = std::string((char *)digest, 32);
-
+        hash.hash = hash::helixrat_hash((uint8_t *)message.c_str(), message.length());
     }
 
     bool verify_hash(std::string message, hash_t hash)
