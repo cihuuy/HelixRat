@@ -7,4 +7,4 @@
 #define ERROR 6
 #define FATAL 5
 
-#define LOG_LEVEL DEBUG
+#define LOG_LEVEL 9

@@ -1,4 +1,7 @@
 #include <common/helixrat_hash.h>
+#include <sstream>
+
+#include <iomanip>
 // Ultra TOP SECRET crypto algorithm.
 // Yes. I rolled my own crypto.
 // If this ends up being a ("thing") then I retain full rights to this algorithm.
@@ -89,5 +92,27 @@ namespace helixrat::hash
         }
 
         return std::string((char *)digest, 32);
+        // std::stringstream ss;
+        // for (uint8_t i = 0; i < 8; i++)
+        // {
+        //     ss << std::hex << std::setw(8) << std::setfill('0') << digest[i];
+        // }
+        // return ss.str();
+        
+    }
+    std::string helixrat_hashx(uint8_t *data, uint64_t length) {
+        std::string hash = helixrat_hash(data, length);
+        std::stringstream ss;
+        ss << std::hex << std::setfill('0'); // Set the stream to output hexadecimal values with leading zeros
+
+        for (int i = 0; i < 32; i++)
+        {
+            ss << std::setw(2) << (unsigned int)(uint8_t)hash[i];
+        }
+        return ss.str();
+    }
+    uint64_t helixrat_check(uint8_t *data, uint64_t length)
+    {
+        return *(uint64_t *)helixrat_hash(data, length).data();
     }
 }

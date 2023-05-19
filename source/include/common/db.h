@@ -8,8 +8,8 @@
 namespace helixrat::DBStore {
     // Init the DBStore
     error_t init(Crypto::secret_t &secret);
-    error_t store(std::string key, std::string value);
-    error_t get(std::string key, std::string &value);
-    error_t remove(std::string key);
-    error_t destroy();
+    bool set(std::string key, std::string value);
+    bool get(std::string key, std::string &value);
+    bool remove(std::string key);
+    bool destroy();
 }

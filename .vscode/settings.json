@@ -48,6 +48,9 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp",
-        "sha256.h": "c"
+        "sha256.h": "c",
+        "iomanip": "cpp",
+        "cstring": "cpp",
+        "codecvt": "cpp"
     }
 }

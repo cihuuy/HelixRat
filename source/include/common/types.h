@@ -14,6 +14,8 @@ namespace helixrat
         FAIL_INIT_ERROR,
         FILE_OPEN_ERROR,
         FAIL_INIT_CRYPTO,
+        FAIL_INVALID_DBSTORE,
+        FAIL_LENGTH_TOO_LONG,
     };
 
     typedef HEXLIX_ERR error_t;

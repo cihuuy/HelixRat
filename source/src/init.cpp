@@ -18,9 +18,24 @@ namespace helixrat
             return FAIL_INIT_CRYPTO;
         }
 
-        Crypto::secret_t dbstore_secret;
-        Crypto::create_secret("password1", "", dbstore_secret);
-        bool dbstore_status = DBStore::init(dbstore_secret);
+        // test crypto
+        std::string test_message = "Hello, world!";
+
+        Crypto::secret_t *dbstore_secret = new Crypto::secret_t;
+        Crypto::create_secret("helixmasta69!", "", *dbstore_secret);
+        std::string test_encrypted;
+
+        Crypto::encrypt(test_message, *dbstore_secret, test_encrypted);
+        std::string test_decrypted;
+        Crypto::decrypt(test_encrypted, *dbstore_secret, test_decrypted);
+        if (test_decrypted != test_message)
+        {
+            return FAIL_INIT_CRYPTO;
+        }
+        Logger::info("Crypto test passed");
+
+        // allocate dbstore secret
+        bool dbstore_status = DBStore::init(*dbstore_secret);
 
         if (!dbstore_status)
         {
