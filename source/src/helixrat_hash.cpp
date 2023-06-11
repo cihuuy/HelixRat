@@ -14,93 +14,84 @@
 
 namespace helixrat::hash
 {
-
-#define ROTLEFT(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
-#define ROTRIGHT(a, b) (((a) >> (b)) | ((a) << (32 - (b))))
-
-// Pseudo-random permutation functions
-// These took me awhile to invent
-#define pbox1(a, b, c)                                                             \
-    ({                                                                             \
-        uint32_t tmp = (a ^ b) ^ ~c;                                               \
-        uint32_t s0 = ROTRIGHT(a, 2) ^ ROTLEFT(a, 12) ^ ROTRIGHT(a, c % 32);       \
-        uint32_t s1 = ROTLEFT(tmp, 6) ^ ROTRIGHT(tmp, 9) ^ ROTLEFT(tmp, tmp % 32); \
-        s0 *tmp + s1;                                                              \
-    })
-
-// Pseudo-random permutation functions
-// These took me awhile to invent
-#define pbox2(a, b, c)                                                                    \
-    ({                                                                                    \
-        uint32_t tmp = (a & b) ^ (~a & c);                                                \
-        uint32_t s0 = ROTLEFT(a, (a + b + c) % 32) ^ ROTRIGHT(a, 11) ^ ROTLEFT(a, 7);     \
-        uint32_t s1 = ROTRIGHT(tmp, s0 % 32) ^ ROTLEFT(tmp, 2) ^ ROTRIGHT(tmp, tmp % 32); \
-        s0 + tmp *s1;                                                                     \
-    })
-
-    std::string helixrat_hash(uint8_t *data, uint64_t length)
+#define ROTRIGHT(a, b) (((a) >> (b)) | ((a) << (64 - (b))))
+#define ROTLEFT(a, b) (((a) << (b)) | ((a) >> (64 - (b))))
+#define NUM_ROUNDS 8
+    static inline void permute_box1(uint64_t *a, uint64_t *b, uint64_t *c, uint64_t *d)
     {
-        uint32_t digest[8] = {0x7b7ffcd1, 0x0d5c75a4, 0x57892cb9, 0xdf7dda71, 0x449355d1, 0xeff23264, 0xf6b54056, 0xf921ec5b};
+        *d ^= (((*a) << 32) ^ ((*d) >> 32)) + (*a) + 1;
+        *c ^= (((*b) << 48) ^ ((*c) >> 16)) + (*b) + 1;
+        *b ^= (((*c) << 32) ^ ((*b) >> 32)) + (*c) + 1;
+        *a ^= (((*d) << 16) ^ ((*a) >> 48)) + (*d) + 1;
 
-        for (uint32_t r = 0; r < 96; r++)
+        // Additional mixing
+        *a += *b & ~*c;
+        *b += *c & ~*d;
+        *c += *d & ~*a;
+        *d += *a & ~*b;
+    }
+
+    static inline void permute_box2(uint64_t *a, uint64_t *b, uint64_t *c, uint64_t *d)
+    {
+        *a ^= ((*a ^ *b) ^ ~*c) << (*d % 7);
+        *b ^= ((*b ^ *c) ^ ~*d) << (*a % 7);
+        *c ^= ((*c ^ *d) ^ ~*a) << (*b % 7);
+        *d ^= ((*d ^ *a) ^ ~*b) << (*c % 7);
+
+        // Additional mixing
+        *a = ROTLEFT(*a, 17) ^ ROTRIGHT(*c, 7);
+        *b = ROTLEFT(*b, 29) ^ ROTRIGHT(*d, 3);
+        *c = ROTLEFT(*c, 47) ^ ROTRIGHT(*b, 13);
+        *d = ROTLEFT(*d, 59) ^ ROTRIGHT(*a, 23);
+    }
+
+    static inline void permute_box3(uint64_t *a, uint64_t *b, uint64_t *c, uint64_t *d)
+    {
+        *a ^= ROTRIGHT(((*a ^ *b) ^ ~*c), (*d % 64)) >> (*a % 16);
+        *b ^= ROTRIGHT(((*b ^ *c) ^ ~*d), (*c % 64)) >> (*b % 16);
+        *c ^= ROTRIGHT(((*c ^ *d) ^ ~*a), (*b % 64)) >> (*c % 16);
+        *d ^= ROTRIGHT(((*d ^ *a) ^ ~*b), (*a % 64)) >> (*d % 16);
+
+        // Additional mixing
+        *a = (*a ^ *b) + (*c ^ *d);
+        *b = (*b ^ *c) + (*d ^ *a);
+        *c = (*c ^ *d) + (*a ^ *b);
+        *d = (*d ^ *a) + (*b ^ *c);
+    }
+
+    std::string helixrat_hash(uint8_t * buffer, uint64_t length)
+    {
+        uint64_t state_1 = NUM_ROUNDS;
+        uint64_t state_2 = 0;
+        uint64_t state_3 = 0;
+        uint64_t state_4 = 0;
+
+        // Iterate over the buffer in 32 byte chunks
+        for (uint32_t i = 0; i < length; i += 32)
         {
-            for (uint64_t i = 0; i < length; i++)
+            // Load the next 32 bytes into the state
+            state_1 = *((uint64_t *)(buffer + i));
+            state_2 = *((uint64_t *)(buffer + i + 8));
+            state_3 = *((uint64_t *)(buffer + i + 16));
+            state_4 = *((uint64_t *)(buffer + i + 24));
+
+            // Perform the rounds
+            for (uint16_t j = 0; j < NUM_ROUNDS; j++)
             {
-                // This is the core of the algorithm.
-                uint32_t a = digest[0];
-                uint32_t b = digest[1];
-                uint32_t c = digest[2];
-                uint32_t d = digest[3];
-                uint32_t e = digest[4];
-                uint32_t f = digest[5];
-                uint32_t g = digest[6];
-                uint32_t h = digest[7];
-
-                uint32_t x = data[i];
-                uint32_t y = data[(i + 1) % length];
-
-                uint32_t t = pbox2(a, b, c) ^ pbox2(d, e, f) ^ pbox2(g, h, x) ^ pbox2(y, a, b);
-                digest[0] = pbox1(a, b, c) ^ t;
-                digest[1] = pbox1(d, e, f) ^ t;
-                digest[2] = pbox1(g, h, x) ^ t;
-                digest[3] = pbox1(y, a, b) ^ t;
-                digest[4] = pbox1(a, b, c) ^ t;
-                digest[5] = pbox1(d, e, f) ^ t;
-                digest[6] = pbox1(g, h, x) ^ t;
-                digest[7] = pbox1(y, a, b) ^ t;
-            }
-            // remix the digest/state
-            uint32_t a = digest[0];
-            uint32_t b = digest[1];
-            uint32_t c = digest[2];
-            uint32_t d = digest[3];
-            uint32_t e = digest[4];
-            uint32_t f = digest[5];
-            uint32_t g = digest[6];
-            uint32_t h = digest[7];
-
-            // Got to love Permutation Boxes
-            uint32_t t = pbox2(a, b, c) ^ pbox2(d, e, f) ^ pbox2(g, h, a) ^ pbox2(b, c, d);
-            uint32_t u = pbox2(e, f, g) ^ pbox2(h, a, b) ^ pbox2(c, d, e) ^ pbox2(f, g, h);
-            uint32_t v = pbox2(f, g, a) * pbox2(h, a, t) * pbox2(c, d, u) * pbox2(g, h, length);
-            for (uint8_t i = 0; i < 8; i++)
-            {
-                digest[i] ^= pbox1(digest[i], digest[(i + 1) % 8], digest[(i + 2) % 8]) ^ v;
-                digest[u % 8] ^= pbox1(digest[u % 8], digest[(u + 1) % 8], digest[i]) ^ v;
-                digest[t % 8] ^= pbox1(digest[t % 8], digest[(t + 1) % 8], digest[i]) ^ v;
+                permute_box1(&state_1, &state_2, &state_3, &state_4);
+                permute_box2(&state_1, &state_2, &state_3, &state_4);
+                permute_box3(&state_1, &state_2, &state_3, &state_4);
             }
         }
-
-        return std::string((char *)digest, 32);
-        // std::stringstream ss;
-        // for (uint8_t i = 0; i < 8; i++)
-        // {
-        //     ss << std::hex << std::setw(8) << std::setfill('0') << digest[i];
-        // }
-        // return ss.str();
-        
+        uint8_t hash[32];
+        *((uint64_t *)(hash + 0)) = state_1;
+        *((uint64_t *)(hash + 8)) = state_2;
+        *((uint64_t *)(hash + 16)) = state_3;
+        *((uint64_t *)(hash + 24)) = state_4;
+        return std::string((char *)hash, 32);
     }
-    std::string helixrat_hashx(uint8_t *data, uint64_t length) {
+    std::string helixrat_hashx(uint8_t *data, uint64_t length)
+    {
         std::string hash = helixrat_hash(data, length);
         std::stringstream ss;
         ss << std::hex << std::setfill('0'); // Set the stream to output hexadecimal values with leading zeros

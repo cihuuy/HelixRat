@@ -5,7 +5,7 @@
 CC = g++
 
 # compiler flags
-CFLAGS = -Iinclude -Wall -std=c++17 -O3 -g
+CFLAGS = -Iinclude -Wall -std=c++17 -O3 
 
 # linker flags
 LFLAGS = 

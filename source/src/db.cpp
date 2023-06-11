@@ -297,6 +297,12 @@ namespace helixrat::DBStore
         return true;
     }
 
+    std::string get(std::string value) {
+        std::string key;
+        get(value, key);
+        return key;
+    }
+
     // Delete key/value pair. Already encrypted so just delete file
     bool remove(std::string key)
     {

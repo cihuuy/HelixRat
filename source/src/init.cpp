@@ -32,7 +32,7 @@ namespace helixrat
         {
             return FAIL_INIT_CRYPTO;
         }
-        Logger::info("Crypto test passed");
+        Logger::debug("Crypto test passed");
 
         // allocate dbstore secret
         bool dbstore_status = DBStore::init(*dbstore_secret);

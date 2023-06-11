@@ -18,17 +18,7 @@ int main(int argc, char *argv[])
     {
         return FAIL_INIT_ERROR;
     }
-    if (args[0] == "e")
-    {
-        DBStore::set("test", "Value set test dbstore");
-        DBStore::set("testmasta2", ".Value set test dbstore");
-        Logger::info("Value set");
-    }
-    else
-    {
-        std::string value;
-        DBStore::get("test", value);
 
-        Logger::info("Value: " + value);
-    }
+    // DBStore::set("sessionToken", "7wFC2LLnp9DzPXIjDa2G44McYl+DxcV4");
+    Logger::info("Session token: " + DBStore::get("sessionToken"));
 }
